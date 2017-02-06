@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link rel="stylesheet" href="style.css">
+	<title>Webカメラの映像を画像化</title>
+</head>
+<body>
+	<h2>Video</h2>
+
+	<video id="camera" autoplay></video>
+	<button id="start">start</button>
+	<h2>Canvas</h2>
+	<canvas id="canvas"></canvas>
+	<h2>Img</h2>
+	<img id="img">
+
+  <h2>２値化画像</h2>
+  <canvas id="c1"></canvas>
+
+
+  <input id="threshold" type="text" value="20">
+
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script type="text/javascript" src="./script.js"></script>
+</body>
+</html>
