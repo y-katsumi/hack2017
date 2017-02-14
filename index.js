@@ -1,14 +1,36 @@
-//videoの縦幅横幅を取得
-const WCANVAS = 500;
-// ブロックの数
-const BLOCKCOUNT = 16;
-// サーバーに接続
-var socket = io('http://10.20.52.137');
-
 $(function(){
-  web_cam = new WebCam('camera', WCANVAS);
-  copy_img = new CopyImg('camera', 'c1');
-  grey_scale = new GreyScale();
+    'use strict';
+    //videoの縦幅横幅を取得
+    const WCANVAS = 500;
+    // ブロックの数
+    const BLOCKCOUNT = 16;
+    // サーバーに接続
+    // var socket = io('http://10.20.52.137');
+
+    var source = 'img'
+    var before = 'c1';
+    var after = 'c2';
+
+    var rego = new ScanRego();
+
+    rego.setDataSource(source, before, after);
+    rego.greyScale();
+    rego.drawData(rego.grey_data);
+
+    $("#ts").change(function(){
+        var w_b_rgba = rego.greyScale($("#ts").val());
+        rego.drawData(w_b_rgba);
+    });
+    $("#sep").click(function(){
+        var w_b_rgba = rego.greyScale($("#ts").val());
+        var block = rego.getBlockInitData(w_b_rgba);
+        var only_block_rgba = rego.pullBlock(rego.origin_data, block);
+        var maze = rego.maze(only_block_rgba);
+        var maze_rgba = rego.mazeRgba(maze);
+        rego.drawData(maze_rgba);
+    });
+
+
 
 
   $("#server_send").click(function(){
@@ -21,16 +43,22 @@ $(function(){
   });
 
 
-$("#img").click(function(e){
-  x = e.pageX - $(this).offset()["left"];
-  y = e.pageY - $(this).offset()["top"];
+$("#" + source).click(function(e){
+  var x = e.pageX - $(this).offset()["left"];
+  var y = e.pageY - $(this).offset()["top"];
 console.log(x);
 console.log(y);
 });
 
-$("#camera").click(function(e){
-  x = e.pageX - $(this).offset()["left"];
-  y = e.pageY - $(this).offset()["top"];
+$("#" + before).click(function(e){
+  var x = e.pageX - $(this).offset()["left"];
+  var y = e.pageY - $(this).offset()["top"];
+console.log(x);
+console.log(y);
+});
+$("#" + after).click(function(e){
+  var x = e.pageX - $(this).offset()["left"];
+  var y = e.pageY - $(this).offset()["top"];
 console.log(x);
 console.log(y);
 });
