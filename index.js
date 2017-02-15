@@ -22,11 +22,13 @@ $(function(){
         rego.drawData(w_b_rgba);
     });
     $("#sep").click(function(){
+        // blockデータを出すために左上と右下が黒くなるように2値化する。その際レゴ以外の部分が黒くならないように要調整
         var w_b_rgba = rego.greyScale($("#ts").val());
         var block = rego.getBlockInitData(w_b_rgba);
+        // レゴだけの画像
         var only_block_rgba = rego.pullBlock(rego.origin_data, block);
         var maze = rego.maze(only_block_rgba);
-        var maze_rgba = rego.mazeRgba(maze);
+        var maze_rgba = rego.mazeRestoration(maze);
         rego.drawData(maze_rgba);
     });
 
