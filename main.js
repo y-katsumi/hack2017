@@ -1,6 +1,5 @@
-var ScanRego = function(){
+var ScanRego = function(BLOCKCOUNT){
     'use strict';
-    const BLOCKCOUNT = 16;
 
     this.origin_data = {};
     this.source = {};
@@ -8,6 +7,7 @@ var ScanRego = function(){
     this.after = {};
     this.grey_data = {};
     this.grey_data.data = [];
+
 
     this.setDataSource = function(source, before, after){
         this.source = document.getElementById(source);
@@ -106,26 +106,26 @@ var ScanRego = function(){
         return block;
     }
     // 迷路データにする
-    this.maze = function(rgba){
+    this.maze = function(rgba, maze_ts){
         var grid = convertArray(rgba);
         var i_length = grid.length;
         var j_length = grid[0].length;
         var maze = [];
         var i_start = 0;
         var j_start = 0;
-        var i_end = parseInt(rgba.height / BLOCKCOUNT);
-        var j_end = parseInt(rgba.width / BLOCKCOUNT);
+        var i_end = ~~(rgba.height / BLOCKCOUNT);
+        var j_end = ~~(rgba.width / BLOCKCOUNT);
         for(var i = 0; i < BLOCKCOUNT; i++){
             maze[i] = [];
             for (var j = 0; j < BLOCKCOUNT; j++) {
-                maze[i][j] = getRegoColorFlag(grid, i_start, j_start, i_end, j_end);
+                maze[i][j] = getRegoColorFlag(grid, i_start, j_start, i_end, j_end, maze_ts);
                 j_start = j_end;
-                j_end += parseInt(rgba.width / BLOCKCOUNT);
+                j_end += ~~(rgba.width / BLOCKCOUNT);
             }
             i_start = i_end;
-            i_end += parseInt(rgba.height / BLOCKCOUNT);
+            i_end += ~~(rgba.height / BLOCKCOUNT);
             j_start = 0;
-            j_end = parseInt(rgba.width / BLOCKCOUNT);
+            j_end = ~~(rgba.width / BLOCKCOUNT);
         }
         return maze;
     }
@@ -145,17 +145,15 @@ var ScanRego = function(){
         return data;
     }
     // ひとマスの色を決める
-    function getRegoColorFlag(rgba, i_start, j_start, i_end, j_end){
+    function getRegoColorFlag(rgba, i_start, j_start, i_end, j_end, maze_ts){
         var color = {};
-        // 平均値をとる場合
-        // for(var i = i_start; i < i_end; i++){
-        //     for(var j = j_start; j < j_end; j++){
-        //         //
-        //     }
-        // }
         // ど真ん中返す
         color = rgba[i_end - i_start][j_end - j_start];
-        color = rgba[parseInt((i_end + i_start) / 2)][parseInt((j_end + j_start) / 2)];
+        color = rgba[~~((i_end + i_start) / 2)][~~((j_end + j_start) / 2)];
+        var g = ~~(0.299 * color.r + 0.587 * color.g + 0.114 * color.b);
+        if (g >= maze_ts) {
+            color.r = color.g = color.b = 255;
+        }
         return color;
     }
     // 迷路データを復元する
@@ -195,7 +193,6 @@ var ScanRego = function(){
     data.data[i] = r, data.data[i + 1] = g, data.data[i + 2] = b, data.data[i + 3] = a
     */
     this.drawData = function(rgba){
-console.log(rgba);
         this.after.setAttribute("width", rgba.width);
         this.after.setAttribute("height", rgba.height);
         var ctx = this.after.getContext("2d");
@@ -209,8 +206,35 @@ console.log(rgba);
     // 1次元を2次元の位置に変換
     function convertXY(i, width){
         var data = {};
-        data.i = parseInt(parseInt(i) / width);
-        data.j = parseInt(parseInt(i) % width);
+        data.i = ~~(~~(i) / width);
+        data.j = ~~(~~(i) % width);
         return data;
+    }
+}
+
+var WebCam = function(video_id, width){
+    var video = document.getElementById(video_id);
+    video.width = width;
+
+    this.localMediaStream = null;
+    //カメラ使えるかチェック
+    var hasGetUserMedia = function() {
+        return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    };
+
+    //エラー
+    var onFailSoHard = function(e) {
+        console.log('エラー!', e);
+    };
+
+    if(!hasGetUserMedia()) {
+        alert("未対応ブラウザです。");
+    } else {
+        window.URL = window.URL || window.webkitURL;
+        navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        navigator.getUserMedia({video: true}, function(stream) {
+        video.src = window.URL.createObjectURL(stream);
+        this.localMediaStream = stream;
+        }, onFailSoHard);
     }
 }

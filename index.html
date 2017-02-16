@@ -11,14 +11,20 @@
 
 </head>
 <body>
-  <img id="img" src="../edit.png"></canvas>
+  クリックで変換前を切り替え<br />
+  <video id="camera" autoplay></video>
+
+  <img id="img" src="edit.png"></canvas>
 
   <h2>変換前</h2>
   <canvas id="c1"></canvas>
 
   <h2>変換後</h2>
   <input type="number" id="ts" value="100">
-  <button id="sep">16分割</button>
+  開始地点と終了地点用
+  <br>
+  <input type="number" id="maze_ts" value="100">
+  影を消す用
   <br />
 
   <canvas id="c2"></canvas>
