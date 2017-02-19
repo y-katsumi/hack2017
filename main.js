@@ -23,10 +23,16 @@ var ScanRego = function(BLOCKCOUNT){
         var width = this.source.offsetWidth;
         var height = this.source.offsetHeight;
 
-        this.before.setAttribute("width", width);
-        this.before.setAttribute("height", height);
+        // this.before.setAttribute("width", width);
+        // this.before.setAttribute("height", height);
+        // var ctx = this.before.getContext('2d');
+        // ctx.drawImage(this.source, 0, 0, width, height);
+
+        // トリミング
+        this.before.setAttribute("width", ~~(width / 2));
+        this.before.setAttribute("height", ~~(height / 2));
         var ctx = this.before.getContext('2d');
-        ctx.drawImage(this.source, 0, 0, width, height);
+        ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width / 4 * 3), ~~(height / 4 * 3));
     }
 
     this.greyScale = function(ts = null){
@@ -146,13 +152,22 @@ var ScanRego = function(BLOCKCOUNT){
     }
     // ひとマスの色を決める
     function getRegoColorFlag(rgba, i_start, j_start, i_end, j_end, maze_ts){
-        var color = {};
-        // ど真ん中返す
-        color = rgba[i_end - i_start][j_end - j_start];
-        color = rgba[~~((i_end + i_start) / 2)][~~((j_end + j_start) / 2)];
+        var color = {r: 0, g: 0, b: 0, a: 0};
+        // 真ん中周辺の平均値にする
+        for(var i = ~~((i_end + i_start) / 2) - 1; i < ~~((i_end + i_start) / 2) + 1; i++){
+            for(var j = ~~((j_end + j_start) / 2) - 1; j < ~~((j_end + j_start) / 2) + 1; j++){
+                color.r += rgba[i][j].r;
+                color.g += rgba[i][j].g;
+                color.b += rgba[i][j].b;
+            }
+        }
+        color.r = ~~(color.r / 9);color.g = ~~(color.g / 9);color.b = ~~(color.b / 9);
         var g = ~~(0.299 * color.r + 0.587 * color.g + 0.114 * color.b);
         if (g >= maze_ts) {
-            color.r = color.g = color.b = 255;
+            // color.r = color.g = color.b = 255;
+            color = 0;
+        } else {
+            color = 1;
         }
         return color;
     }
@@ -192,10 +207,11 @@ var ScanRego = function(BLOCKCOUNT){
     data.height, data.width
     data.data[i] = r, data.data[i + 1] = g, data.data[i + 2] = b, data.data[i + 3] = a
     */
-    this.drawData = function(rgba){
-        this.after.setAttribute("width", rgba.width);
-        this.after.setAttribute("height", rgba.height);
-        var ctx = this.after.getContext("2d");
+    this.drawData = function(rgba, canvas_id){
+        var cavas_obj = document.getElementById(canvas_id);
+        cavas_obj.setAttribute("width", rgba.width);
+        cavas_obj.setAttribute("height", rgba.height);
+        var ctx = cavas_obj.getContext("2d");
         var dst = ctx.createImageData(rgba.width, rgba.height);
         var length = rgba.data.length;
         for (var i = 0; i < length; i++) {
@@ -212,7 +228,7 @@ var ScanRego = function(BLOCKCOUNT){
     }
 }
 
-var WebCam = function(video_id, width){
+var WebCam = function(video_id, width, callBack){
     var video = document.getElementById(video_id);
     video.width = width;
 
@@ -233,8 +249,9 @@ var WebCam = function(video_id, width){
         window.URL = window.URL || window.webkitURL;
         navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
         navigator.getUserMedia({video: true}, function(stream) {
-        video.src = window.URL.createObjectURL(stream);
-        this.localMediaStream = stream;
+            video.src = window.URL.createObjectURL(stream);
+            this.localMediaStream = stream;
+            callBack();
         }, onFailSoHard);
     }
 }
