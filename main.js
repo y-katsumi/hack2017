@@ -5,6 +5,7 @@ var ScanRego = function(BLOCKCOUNT){
     this.source = {};
     this.before = {};
     this.after = {};
+    this.after_data = {};
     this.grey_data = {};
     this.grey_data.data = [];
 
@@ -27,43 +28,53 @@ var ScanRego = function(BLOCKCOUNT){
         // this.before.setAttribute("height", height);
         // var ctx = this.before.getContext('2d');
         // ctx.drawImage(this.source, 0, 0, width, height);
+        // this.after_data = ctx.getImageData(0, 0, width, height);
 
         // トリミング
+        // this.before.setAttribute("width", ~~(width / 1.5));
+        // this.before.setAttribute("height", ~~(height / 1.5));
+        // var ctx = this.before.getContext('2d');
+        // ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width), ~~(height));
+        // this.after_data = ctx.getImageData(0, 0, ~~(width / 1.5), ~~(height / 1.5));
+
         this.before.setAttribute("width", ~~(width / 2));
         this.before.setAttribute("height", ~~(height / 2));
         var ctx = this.before.getContext('2d');
-        ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width / 4 * 3), ~~(height / 4 * 3));
+        ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width), ~~(height));
+        this.after_data = ctx.getImageData(0, 0, ~~(width / 2), ~~(height / 2));
     }
 
     this.greyScale = function(ts = null){
-        var length = this.origin_data.data.length;
+        var length = this.after_data.data.length;
         for (var i = 0; i < length; i = i + 4) {
-            var g = ~~(0.299 * this.origin_data.data[i] + 0.587 * this.origin_data.data[i + 1] + 0.114 * this.origin_data.data[i + 2]);
+            var g = ~~(0.299 * this.after_data.data[i] + 0.587 * this.after_data.data[i + 1] + 0.114 * this.after_data.data[i + 2]);
             if (ts) {
                 g = (g > ts)? 255: 0;
             }
             this.grey_data.data[i] = this.grey_data.data[i + 1] = this.grey_data.data[i + 2] = g;
-            this.grey_data.data[i + 3] = this.origin_data.data[i+ 3];
+            this.grey_data.data[i + 3] = this.after_data.data[i+ 3];
         }
-        this.grey_data.width = this.origin_data.width;
-        this.grey_data.height = this.origin_data.height;
+        this.grey_data.width = this.after_data.width;
+        this.grey_data.height = this.after_data.height;
         return this.grey_data;
     }
     // 画像抽出
-    this.pullBlock = function(rgba, block){
+    this.pullBlock = function(rgba, block, correction){
         // ブロックだけのデータにする
         var block_rgba = {data: [], width: 0, height: 0};
         var ii = 0;
         var start = convertXY(block.start / 4, rgba.width);
         var end = convertXY(block.end / 4, rgba.width);
-        for (var i = block.start; i < block.end; i = i + 4) {
+        // 右下を多めにとる
+        var correction = 3;
+        for (var i = block.start; i < block.end + correction; i = i + 4) {
             var tmp = convertXY(i / 4, rgba.width);
             // 左側を飛ばす
             if (tmp.j < start.j) {
                 continue;
             }
             // 右側を飛ばす
-            if (tmp.j >= end.j) {
+            if (tmp.j >= end.j + correction) {
                 continue;
             }
             block_rgba.data[ii] = rgba.data[i];
@@ -72,8 +83,8 @@ var ScanRego = function(BLOCKCOUNT){
             block_rgba.data[ii + 3] = rgba.data[i + 3];
             ii += 4;
         }
-        block_rgba.width = end.j - start.j;
-        block_rgba.height = end.i - start.i;
+        block_rgba.width = end.j - start.j + correction;
+        block_rgba.height = end.i - start.i + correction;
         return block_rgba;
     }
     // 2値化データから最初の位置と最後の位置,ブロックの幅と高さを取得
@@ -162,6 +173,7 @@ var ScanRego = function(BLOCKCOUNT){
             }
         }
         color.r = ~~(color.r / 9);color.g = ~~(color.g / 9);color.b = ~~(color.b / 9);
+        // color = rgba[~~((i_end + i_start) / 2)][~~((j_end + j_start) / 2)];
         var g = ~~(0.299 * color.r + 0.587 * color.g + 0.114 * color.b);
         if (g >= maze_ts) {
             // color.r = color.g = color.b = 255;

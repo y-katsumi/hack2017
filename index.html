@@ -14,9 +14,11 @@
   クリックで変換前を切り替え<br />
   <video id="camera" autoplay></video>
 
+  <div style="display:none">
   デバッグ用の画像
   <br>
   <img id="img" src="edit.png"></canvas>
+  </div>
 
   <h2>変換前</h2>
   <canvas id="c1"></canvas>
@@ -25,8 +27,11 @@
   <input type="number" id="ts" value="85">
   開始地点と終了地点用
   <br>
-  <input type="number" id="maze_ts" value="50">
+  <input type="number" id="maze_ts" value="45">
   影を消す用
+  <br>
+  <input type="number" id="correction" value="3">
+  右下を足す
   <br>
 
   <table>

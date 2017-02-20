@@ -4,8 +4,6 @@ $(function(){
     const WCANVAS = 500;
     // ブロックの数
     const BLOCKCOUNT = 16;
-    // サーバーに接続
-    // var socket = io('http://10.20.52.137');
 
     var source = 'img'
     var before = 'c1';
@@ -13,6 +11,7 @@ $(function(){
     var deb_after = 'c3';
     var camera = 'camera';
     // var socket = io('http://10.20.52.137');
+    var socket = null;
 
     var rego = new ScanRego(BLOCKCOUNT);
     var auto_render = false;
@@ -25,7 +24,8 @@ $(function(){
         if (auto_render == false) {
             auto_render = setInterval(function(){
                 rego.setDataSource(camera, before, after);
-                maze();
+                var maze_data = maze();
+                send(maze_data);
             }, 1000);
         }
     });
@@ -41,7 +41,7 @@ $(function(){
         var w_b_rgba = rego.greyScale($("#ts").val());
         var block = rego.getBlockInitData(w_b_rgba);
         // レゴだけの画像
-        var only_block_rgba = rego.pullBlock(rego.origin_data, block);
+        var only_block_rgba = rego.pullBlock(rego.after_data, block, $("#correction").val());
         rego.drawData(w_b_rgba, deb_after);
     });
     $("#maze_ts").change(function(){
@@ -56,17 +56,24 @@ $(function(){
         var w_b_rgba = rego.greyScale($("#ts").val());
         var block = rego.getBlockInitData(w_b_rgba);
         // レゴだけの画像
-        var only_block_rgba = rego.pullBlock(rego.origin_data, block);
+        var only_block_rgba = rego.pullBlock(rego.after_data, block, $("#correction").val());
         var maze = rego.maze(only_block_rgba, $("#maze_ts").val());
         var maze_rgba = rego.mazeRestoration(maze);
         rego.drawData(maze_rgba, after);
         rego.drawData(only_block_rgba, deb_after);
+        return maze;
     }
 
     function send(data){
+        // 送信前チェック
+        if ((data[0][0] == 1) || (data[BLOCKCOUNT - 1][BLOCKCOUNT - 1] == 1)) {
+            return false;
+        }
         data[0][0] = 0;
         data[BLOCKCOUNT - 1][BLOCKCOUNT - 1] = 0;
-        socket.emit('maze_update', data);
+        if (socket != null) {
+            socket.emit('maze_update', data);
+        }
     }
 
 
