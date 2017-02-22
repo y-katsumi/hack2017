@@ -1,12 +1,44 @@
 var ScanRego = function(BLOCKCOUNT){
     'use strict';
+    const WHITE_FLAG  = 0;
+    const RED_FLAG    = 1;
+    const GREEN_FLAG  = 2;
+    const PURPLE_FLAG = 3;
+    const BLACK_FLAG  = 4; // 影
 
-    this.origin_data = {};
-    this.source = {};
-    this.before = {};
-    this.after = {};
-    this.after_data = {};
-    this.grey_data = {};
+    const WHITE = {
+        h: 0, s: 0, v: 100
+        ,r: 255, g: 255, b: 255
+    };
+    const RED    = {
+        h: 359, s: 100, v: 76
+        ,r: 200, g: 0, b: 0
+    };
+    const GREEN  = {
+        h: 136, s: 100, v: 38
+        ,r: 0, g: 200, b: 0
+    };
+    const PURPLE = {
+        h: 268, s: 44, v: 76
+        ,r: 100, g: 0, b: 100
+    };
+    const BLACK = {
+        h: 0, s: 0, v: 0
+        ,r: 0, g: 0, b: 0
+    };
+    var COLOR = [];
+    COLOR[WHITE_FLAG]  = WHITE;
+    COLOR[RED_FLAG]    = RED;
+    COLOR[GREEN_FLAG]  = GREEN;
+    COLOR[PURPLE_FLAG] = PURPLE;
+    COLOR[BLACK_FLAG]  = BLACK;
+
+    this.origin_data    = {};
+    this.source         = {};
+    this.before         = {};
+    this.after          = {};
+    this.after_data     = {};
+    this.grey_data      = {};
     this.grey_data.data = [];
 
 
@@ -31,17 +63,21 @@ var ScanRego = function(BLOCKCOUNT){
         // this.after_data = ctx.getImageData(0, 0, width, height);
 
         // トリミング
-        // this.before.setAttribute("width", ~~(width / 1.5));
-        // this.before.setAttribute("height", ~~(height / 1.5));
-        // var ctx = this.before.getContext('2d');
-        // ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width), ~~(height));
-        // this.after_data = ctx.getImageData(0, 0, ~~(width / 1.5), ~~(height / 1.5));
-
-        this.before.setAttribute("width", ~~(width / 2));
-        this.before.setAttribute("height", ~~(height / 2));
+        this.before.setAttribute("width", ~~(width / 1.5));
+        this.before.setAttribute("height", ~~(height / 1.5));
         var ctx = this.before.getContext('2d');
         ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width), ~~(height));
-        this.after_data = ctx.getImageData(0, 0, ~~(width / 2), ~~(height / 2));
+        this.after_data = ctx.getImageData(0, 0, ~~(width / 1.5), ~~(height / 1.5));
+
+        // this.before.setAttribute("width", ~~(width / 2));
+        // this.before.setAttribute("height", ~~(height / 2));
+        // var ctx = this.before.getContext('2d');
+        // ctx.drawImage(this.source, -~~(width / 4), -~~(height / 4), ~~(width), ~~(height));
+
+        // goGaussian();
+        // var ctx = this.before.getContext('2d');
+
+        // this.after_data = ctx.getImageData(0, 0, ~~(width / 2), ~~(height / 2));
     }
 
     this.greyScale = function(ts = null){
@@ -59,22 +95,21 @@ var ScanRego = function(BLOCKCOUNT){
         return this.grey_data;
     }
     // 画像抽出
-    this.pullBlock = function(rgba, block, correction){
+    this.pullBlock = function(rgba, block){
         // ブロックだけのデータにする
         var block_rgba = {data: [], width: 0, height: 0};
         var ii = 0;
         var start = convertXY(block.start / 4, rgba.width);
         var end = convertXY(block.end / 4, rgba.width);
-        // 右下を多めにとる
-        var correction = 3;
-        for (var i = block.start; i < block.end + correction; i = i + 4) {
+
+        for (var i = block.start; i < block.end; i = i + 4) {
             var tmp = convertXY(i / 4, rgba.width);
             // 左側を飛ばす
             if (tmp.j < start.j) {
                 continue;
             }
             // 右側を飛ばす
-            if (tmp.j >= end.j + correction) {
+            if (tmp.j >= end.j) {
                 continue;
             }
             block_rgba.data[ii] = rgba.data[i];
@@ -83,18 +118,18 @@ var ScanRego = function(BLOCKCOUNT){
             block_rgba.data[ii + 3] = rgba.data[i + 3];
             ii += 4;
         }
-        block_rgba.width = end.j - start.j + correction;
-        block_rgba.height = end.i - start.i + correction;
+        block_rgba.width = end.j - start.j;
+        block_rgba.height = end.i - start.i;
         return block_rgba;
     }
     // 2値化データから最初の位置と最後の位置,ブロックの幅と高さを取得
-    this.getBlockInitData = function(rgba){
+    this.getBlockInitData = function(rgba, correction){
         var block = {};
         var length = rgba.data.length;
         var start = {i: 9999,j: 9999};
         var end = {i: 0,j: 0};
         // 左上の位置
-        for (var i = 0; i < length / 3; i = i + 4) {
+        for (var i = 0; i < length / 2; i = i + 4) {
             if (rgba.data[i] !== 255) {
                 var tmp = {};
                 tmp = convertXY(i / 4, rgba.width);
@@ -105,7 +140,7 @@ var ScanRego = function(BLOCKCOUNT){
             }
         }
         // 右下の位置
-        for (var i = length - 1; i >= length / 3; i = i - 4) {
+        for (var i = length - 1; i >= length / 2; i = i - 4) {
             if (rgba.data[i - 2] !== 255) {
                 var tmp = {};
                 tmp = convertXY(i / 4, rgba.width);
@@ -115,6 +150,9 @@ var ScanRego = function(BLOCKCOUNT){
                 }
             }
         }
+        // endは少し足す
+        correction = ~~(correction);
+        block.end = block.end + (rgba.width * 4 * correction) + (4 * correction);
         // 考えにくいのでxyで考える
         start = convertXY(block.start / 4, rgba.width);
         end = convertXY(block.end / 4, rgba.width);
@@ -130,19 +168,20 @@ var ScanRego = function(BLOCKCOUNT){
         var maze = [];
         var i_start = 0;
         var j_start = 0;
-        var i_end = ~~(rgba.height / BLOCKCOUNT);
-        var j_end = ~~(rgba.width / BLOCKCOUNT);
+
+        var i_end = ~~(rgba.height / BLOCKCOUNT * 10) / 10;
+        var j_end = ~~(rgba.width / BLOCKCOUNT * 10) / 10;
         for(var i = 0; i < BLOCKCOUNT; i++){
             maze[i] = [];
             for (var j = 0; j < BLOCKCOUNT; j++) {
                 maze[i][j] = getRegoColorFlag(grid, i_start, j_start, i_end, j_end, maze_ts);
                 j_start = j_end;
-                j_end += ~~(rgba.width / BLOCKCOUNT);
+                j_end += ~~(rgba.width / BLOCKCOUNT * 10) / 10;
             }
             i_start = i_end;
-            i_end += ~~(rgba.height / BLOCKCOUNT);
+            i_end += ~~(rgba.height / BLOCKCOUNT * 10) / 10;
             j_start = 0;
-            j_end = ~~(rgba.width / BLOCKCOUNT);
+            j_end = ~~(rgba.width / BLOCKCOUNT * 10) / 10;
         }
         return maze;
     }
@@ -163,24 +202,50 @@ var ScanRego = function(BLOCKCOUNT){
     }
     // ひとマスの色を決める
     function getRegoColorFlag(rgba, i_start, j_start, i_end, j_end, maze_ts){
-        var color = {r: 0, g: 0, b: 0, a: 0};
+        var count = 0;
+        var color = {r: 0, g: 0, b: 0, a: 255};
         // 真ん中周辺の平均値にする
         for(var i = ~~((i_end + i_start) / 2) - 1; i < ~~((i_end + i_start) / 2) + 1; i++){
             for(var j = ~~((j_end + j_start) / 2) - 1; j < ~~((j_end + j_start) / 2) + 1; j++){
                 color.r += rgba[i][j].r;
                 color.g += rgba[i][j].g;
                 color.b += rgba[i][j].b;
+                count++;
             }
         }
-        color.r = ~~(color.r / 9);color.g = ~~(color.g / 9);color.b = ~~(color.b / 9);
+        color.r = ~~(color.r / count);color.g = ~~(color.g / count);color.b = ~~(color.b / count);
         // color = rgba[~~((i_end + i_start) / 2)][~~((j_end + j_start) / 2)];
+
+        // // 色判定
         var g = ~~(0.299 * color.r + 0.587 * color.g + 0.114 * color.b);
+        // 影を消す
         if (g >= maze_ts) {
-            // color.r = color.g = color.b = 255;
-            color = 0;
-        } else {
-            color = 1;
+            color.r = color.g = color.b = 255;
         }
+        var hsv = rgbToHsv(color);
+        var check = [];
+        check[WHITE_FLAG] = colorDistance(hsv, WHITE);
+        check[RED_FLAG] = colorDistance(hsv, RED);
+        check[GREEN_FLAG] = colorDistance(hsv, GREEN);
+        check[PURPLE_FLAG] = colorDistance(hsv, PURPLE);
+        check[BLACK_FLAG] = colorDistance(hsv, BLACK);
+        var min = Math.min.apply(null,check);
+        color = check.indexOf(min);
+        // 影と紫は白
+        if ((color == BLACK_FLAG) || (color == PURPLE_FLAG)) {
+            color = WHITE_FLAG;
+        }
+        // 近い色がなければ白
+        // if (min >= 60) {
+        //     color = WHITE_FLAG;
+        // }
+        // var g = ~~(0.299 * color.r + 0.587 * color.g + 0.114 * color.b);
+        // if (g >= maze_ts) {
+        //     // color.r = color.g = color.b = 255;
+        //     color = 0;
+        // } else {
+        //     color = 1;
+        // }
         return color;
     }
     // 迷路データを復元する
@@ -188,6 +253,7 @@ var ScanRego = function(BLOCKCOUNT){
         var px = 30;
         var maze_rgba = {data: [], width: BLOCKCOUNT * px, height: BLOCKCOUNT * px};
         var ii = 0;
+
         for (var i = 0; i < BLOCKCOUNT; i++) {
             for(var i_magni = 0; i_magni < px; i_magni++){
                 for (var j = 0; j < BLOCKCOUNT; j++) {
@@ -197,15 +263,10 @@ var ScanRego = function(BLOCKCOUNT){
                             maze_rgba.data[ii + 1] = maze[i][j].g;
                             maze_rgba.data[ii + 2] = maze[i][j].b;
                             maze_rgba.data[ii + 3] = maze[i][j].a;
-                        } else if (maze[i][j] == 0) {
-                            maze_rgba.data[ii]     = 255;
-                            maze_rgba.data[ii + 1] = 255;
-                            maze_rgba.data[ii + 2] = 255;
-                            maze_rgba.data[ii + 3] = 255;
-                        } else if (maze[i][j] == 1) {
-                            maze_rgba.data[ii]     = 0;
-                            maze_rgba.data[ii + 1] = 0;
-                            maze_rgba.data[ii + 2] = 0;
+                        } else {
+                            maze_rgba.data[ii]     = COLOR[maze[i][j]].r;
+                            maze_rgba.data[ii + 1] = COLOR[maze[i][j]].g;
+                            maze_rgba.data[ii + 2] = COLOR[maze[i][j]].b;
                             maze_rgba.data[ii + 3] = 255;
                         }
                         ii += 4;
@@ -237,6 +298,39 @@ var ScanRego = function(BLOCKCOUNT){
         data.i = ~~(~~(i) / width);
         data.j = ~~(~~(i) % width);
         return data;
+    }
+
+    function rgbToHsv(rgb) {
+        var hsv = { h: 0, s: 0, v: 0};
+        var r = rgb.r / 255;
+        var g = rgb.g / 255;
+        var b = rgb.b / 255;
+        var max = Math.max(Math.max(r, g), b);
+        var min = Math.min(Math.min(r, g), b);
+
+        if (max === min ) hsv.h = 0;
+        else if (max === r) hsv.h = ( 60 * (g - b) / (max - min ) + 360 ) % 360;
+        else if (max === g) hsv.h = 60 * (b - r ) / (max - min ) + 120;
+        else if (max === b) hsv.h = 60 * (r - g ) / (max - min ) + 240;
+
+        if (max === 0 ) hsv.s = 0;
+        else hsv.s = 1 - min / max;
+
+        hsv.v = max * 100;
+        hsv.s *= 100;
+
+        return hsv;
+    }
+    function colorDistance(a, b) {
+        var hueDiff = 0;
+        if (a.h > b.h) {
+            hueDiff = Math.min(a.h - b.h, b.h - a.h + 360);
+        } else {
+            hueDiff = Math.min(b.h - a.h, a.h - b.h + 360);
+        }
+        return ~~(Math.sqrt(Math.pow(hueDiff, 2)
+                    + Math.pow(a.s - b.s, 2)
+                    + Math.pow(a.v- b.v, 2)));
     }
 }
 

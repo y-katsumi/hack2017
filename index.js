@@ -1,7 +1,7 @@
 $(function(){
     'use strict';
     //videoの縦幅横幅を取得
-    const WCANVAS = 500;
+    const WCANVAS = 800;
     // ブロックの数
     const BLOCKCOUNT = 16;
 
@@ -39,9 +39,9 @@ $(function(){
         clearInterval(auto_render);
         auto_render = false;
         var w_b_rgba = rego.greyScale($("#ts").val());
-        var block = rego.getBlockInitData(w_b_rgba);
+        var block = rego.getBlockInitData(w_b_rgba, $("#correction").val());
         // レゴだけの画像
-        var only_block_rgba = rego.pullBlock(rego.after_data, block, $("#correction").val());
+        var only_block_rgba = rego.pullBlock(rego.after_data, block);
         rego.drawData(w_b_rgba, deb_after);
     });
     $("#maze_ts").change(function(){
@@ -50,13 +50,23 @@ $(function(){
         maze();
     });
 
-    function maze(){
+    // レゴだけ抜き出す
+    function w_b_rego_rgba(){
+        // 白い紙の位置を取得
+        var w_paper_rgba = rego.greyScale($("#ts").val());
+        var w_paper_block = rego.getBlockInitData(w_paper_rgba, $("#correction").val());
         // blockデータを出すためにレゴの左上と右下が黒くなるように2値化する。
         // ※右上と左下は黒くなっても良いが、左上と右下はレゴ以外は白くなっていること
+        var block = rego.getBlockInitData(w_paper_rgba, $("#correction").val());
+
+        return block;
+    }
+
+    function maze(){
         var w_b_rgba = rego.greyScale($("#ts").val());
-        var block = rego.getBlockInitData(w_b_rgba);
+        var block = rego.getBlockInitData(w_b_rgba, $("#correction").val());
         // レゴだけの画像
-        var only_block_rgba = rego.pullBlock(rego.after_data, block, $("#correction").val());
+        var only_block_rgba = rego.pullBlock(rego.after_data, block);
         var maze = rego.maze(only_block_rgba, $("#maze_ts").val());
         var maze_rgba = rego.mazeRestoration(maze);
         rego.drawData(maze_rgba, after);
