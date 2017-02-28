@@ -10,21 +10,28 @@ $(function(){
     var after = 'c2';
     var deb_after = 'c3';
     var camera = 'camera';
-    // var socket = io('http://10.20.52.137');
+    // var socket = io('http://192.168.1.121');
     var socket = null;
 
     var rego = new ScanRego(BLOCKCOUNT);
     var auto_render = false;
 
+    var maze_data = {0: null, 1: null};
+    var maze_send = null;
+    var maze_counter = 0;
+
     var web_cam = new WebCam(camera, WCANVAS, function(){
         rego.setDataSource(camera, before, after);
     });
 
+    // 1秒づつ撮る。一個前に撮ったデータと同じだったら送信する。
     $("#" + camera).click(function(){
         if (auto_render == false) {
             auto_render = setInterval(function(){
+                maze_data[maze_counter] = null;
                 rego.setDataSource(camera, before, after);
-                var maze_data = maze();
+                maze_data[maze_counter] = maze();
+                maze_counter = (maze_counter + 1) % 2;
                 send(maze_data);
             }, 1000);
         }
@@ -76,15 +83,81 @@ $(function(){
 
     function send(data){
         // 送信前チェック
-        if ((data[0][0] == 1) || (data[BLOCKCOUNT - 1][BLOCKCOUNT - 1] == 1)) {
-            return false;
+        for(var i = 0; i < 2; i++){
+            if ((data[i] instanceof Array === false) || (data[i][0] instanceof Array === false)) {
+                return false;
+            }
+            var i_length = data[i].length;
+            var j_length = data[i][0].length;
+
+            if ((i_length != BLOCKCOUNT) || (j_length != BLOCKCOUNT)) {
+                return false;
+            }
         }
-        data[0][0] = 0;
-        data[BLOCKCOUNT - 1][BLOCKCOUNT - 1] = 0;
+        // 2回撮影して同じデータだったらok
+        for(var i = 0; i < i_length; i++){
+            for(var j = 0; j < j_length; j++){
+                if (data[0][i][j] != data[1][i][j]) {
+                    return false;
+                }
+            }
+        }
+        // 既に同じデータを送っていたら送らない
+        if (maze_send != null) {
+            var all_check = false;
+            for(var i = 0; i < i_length; i++){
+                for(var j = 0; j < j_length; j++){
+                    if (data[0][i][j] != maze_send[i][j]) {
+                        all_check = true;
+                    }
+                }
+            }
+            if (!all_check) {
+                return false;
+            }
+        }
+
+        maze_send = [];
+        var tmp_data = [];
+        for(var i = 0; i < i_length; i++){
+            tmp_data[i] = [];
+            maze_send[i] = [];
+            for(var j = 0; j < j_length; j++){
+                tmp_data[i][j] = data[0][i][j];
+                maze_send[i][j] = data[0][i][j];
+            }
+        }
+console.log(maze_send);
+        for(var i = 0; i < i_length; i++){
+            for(var j = 0; j < j_length; j++){
+                // 2以上は1にする
+                if (tmp_data[i][j] > 1) {
+                    tmp_data[i][j] = 1;
+                }
+            }
+        }
+        tmp_data[0][0] = 0;
+        tmp_data[BLOCKCOUNT - 1][BLOCKCOUNT - 1] = 0;
         if (socket != null) {
-            socket.emit('maze_update', data);
+            socket.emit('maze_update', tmp_data);
         }
     }
+
+    //=======================================
+    // データ送信
+    // document.onkeydown = keydown;
+    // function keydown() {
+    //     // 黒曜石のnext
+    //     if (event.keyCode == 34) {
+    //         send(maze_data);
+    //         return false;
+    //     }
+    // }
+    // $(".send_maze").click(function(){
+    //     send(maze_data);
+    // });
+    // データ送信
+    //=======================================
 
 
 

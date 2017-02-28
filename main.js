@@ -156,8 +156,8 @@ var ScanRego = function(BLOCKCOUNT){
         // 考えにくいのでxyで考える
         start = convertXY(block.start / 4, rgba.width);
         end = convertXY(block.end / 4, rgba.width);
-        console.log('start:', start);
-        console.log('end:', end);
+        // console.log('start:', start);
+        // console.log('end:', end);
         return block;
     }
     // 迷路データにする
@@ -231,10 +231,14 @@ var ScanRego = function(BLOCKCOUNT){
         check[BLACK_FLAG] = colorDistance(hsv, BLACK);
         var min = Math.min.apply(null,check);
         color = check.indexOf(min);
-        // 影と紫は白
-        if ((color == BLACK_FLAG) || (color == PURPLE_FLAG)) {
+        // 影は白
+        if (color == BLACK_FLAG) {
             color = WHITE_FLAG;
         }
+        // // 影と紫は白
+        // if ((color == BLACK_FLAG) || (color == PURPLE_FLAG)) {
+        //     color = WHITE_FLAG;
+        // }
         // 近い色がなければ白
         // if (min >= 60) {
         //     color = WHITE_FLAG;
@@ -250,7 +254,7 @@ var ScanRego = function(BLOCKCOUNT){
     }
     // 迷路データを復元する
     this.mazeRestoration = function(maze){
-        var px = 30;
+        var px = 15;
         var maze_rgba = {data: [], width: BLOCKCOUNT * px, height: BLOCKCOUNT * px};
         var ii = 0;
 
