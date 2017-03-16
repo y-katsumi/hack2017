@@ -10,8 +10,8 @@ $(function(){
     var after = 'c2';
     var deb_after = 'c3';
     var camera = 'camera';
-    // var socket = io('http://192.168.1.121');
-    var socket = null;
+    var socket = io('192.168.1.140:8081');
+    // var socket = null;
 
     var rego = new ScanRego(BLOCKCOUNT);
     var auto_render = false;
@@ -24,17 +24,9 @@ $(function(){
         rego.setDataSource(camera, before, after);
     });
 
-    // 1秒づつ撮る。一個前に撮ったデータと同じだったら送信する。
+    auto_start();
     $("#" + camera).click(function(){
-        if (auto_render == false) {
-            auto_render = setInterval(function(){
-                maze_data[maze_counter] = null;
-                rego.setDataSource(camera, before, after);
-                maze_data[maze_counter] = maze();
-                maze_counter = (maze_counter + 1) % 2;
-                send(maze_data);
-            }, 1000);
-        }
+        auto_start();
     });
     $("#" + source).click(function(){
         clearInterval(auto_render);
@@ -42,20 +34,20 @@ $(function(){
         rego.setDataSource(source, before, after);
     });
 
-    $("#ts").change(function(){
-        clearInterval(auto_render);
-        auto_render = false;
-        var w_b_rgba = rego.greyScale($("#ts").val());
-        var block = rego.getBlockInitData(w_b_rgba, $("#correction").val());
-        // レゴだけの画像
-        var only_block_rgba = rego.pullBlock(rego.after_data, block);
-        rego.drawData(w_b_rgba, deb_after);
-    });
-    $("#maze_ts").change(function(){
-        clearInterval(auto_render);
-        auto_render = false;
-        maze();
-    });
+    // $("#ts").change(function(){
+    //     clearInterval(auto_render);
+    //     auto_render = false;
+    //     var w_b_rgba = rego.greyScale($("#ts").val());
+    //     var block = rego.getBlockInitData(w_b_rgba, $("#correction").val());
+    //     // レゴだけの画像
+    //     var only_block_rgba = rego.pullBlock(rego.after_data, block);
+    //     rego.drawData(w_b_rgba, deb_after);
+    // });
+    // $("#maze_ts").change(function(){
+    //     clearInterval(auto_render);
+    //     auto_render = false;
+    //     maze();
+    // });
 
     // レゴだけ抜き出す
     function w_b_rego_rgba(){
@@ -143,19 +135,34 @@ console.log(maze_send);
         }
     }
 
+    // 1秒づつ撮る。一個前に撮ったデータと同じだったら送信する。
+    function auto_start(){
+        if (auto_render == false) {
+            auto_render = setInterval(function(){
+                maze_data[maze_counter] = null;
+                rego.setDataSource(camera, before, after);
+                maze_data[maze_counter] = maze();
+                maze_counter = (maze_counter + 1) % 2;
+                send(maze_data);
+            }, 1000);
+        }
+    }
+
     //=======================================
     // データ送信
-    // document.onkeydown = keydown;
-    // function keydown() {
-    //     // 黒曜石のnext
-    //     if (event.keyCode == 34) {
-    //         send(maze_data);
-    //         return false;
-    //     }
-    // }
-    // $(".send_maze").click(function(){
-    //     send(maze_data);
-    // });
+    document.onkeydown = keydown;
+    function keydown() {
+        // 黒曜石のnext
+        if (event.keyCode == 34) {
+            maze_send = null;
+            send(maze_data);
+            return false;
+        }
+    }
+    $(".send_maze").click(function(){
+        maze_send = null;
+        send(maze_data);
+    });
     // データ送信
     //=======================================
 
